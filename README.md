@@ -1,5 +1,3 @@
-I'll convert this into proper Markdown formatting for GitHub:
-
 # ✨ Grok Stylized ✨
 
 Transform Grok from drab to fab with this sleek Monokai-inspired theme!
