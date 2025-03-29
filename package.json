@@ -1,0 +1,21 @@
+{
+    "name": "grok-restyle-extension",
+    "version": "1.0.0",
+    "description": "Restyles grok.com with Panda CSS and Prism.js",
+    "main": "index.js",
+    "scripts": {
+      "build": "panda codegen && vite build",
+      "postbuild": "cp src/manifest.json dist/ && cp node_modules/prismjs/themes/prism-tomorrow.css dist/prism.css"
+    },
+    "devDependencies": {
+      "@pandacss/dev": "^0.40.0",
+      "@types/three": "^0.174.0",
+      "typescript": "^5.4.3",
+      "vite": "^5.2.8"
+    },
+    "dependencies": {
+      "prismjs": "^1.30.0",
+      "three": "^0.174.0"
+    }
+  }
+  

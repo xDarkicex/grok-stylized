@@ -1,0 +1,14 @@
+{
+"compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "target": "es6",
+    "module": "esnext",
+    "strict": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "node"
+},
+"include": ["src/**/*"]
+}

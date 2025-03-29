@@ -1,0 +1,896 @@
+// Import Three.js
+import * as THREE from 'three';
+
+// Colors from your existing configuration
+const COLORS = {
+  grokDark: '#1a1a2e',
+  grokPurple: '#6b48ff',
+  grokNeon: 'rgb(255 79 78)',
+  primary: '#FF4F4D',
+  surface: '#FFF5F2',
+  background: '#120E18',
+  text: '#2A2A2A',
+  background1: '#19181a',
+  background2: '#221f22'
+};
+
+// Debug logging function
+function log(...args: any[]) {
+  console.log('[Grok Restyler]', ...args);
+}
+
+// Track mouse position for particle interaction
+let mouseX = window.innerWidth / 2;
+let mouseY = window.innerHeight / 2;
+
+function trackCursor() {
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+}
+
+// Create a single stylesheet for basic styling
+// Create a single stylesheet for basic styling
+function injectGlobalStyles() {
+    const style = document.createElement('style');
+    style.id = 'grok-restyler-css';
+    style.textContent = `
+      /* Dark Monokai background with gradient */
+      body.antialiased {
+        background: linear-gradient(135deg, ${COLORS.background1} 0%, ${COLORS.background2} 100%) !important;
+        color: #FFFFFF !important;
+        font-family: system-ui, -apple-system, sans-serif !important;
+      }
+      
+      /* Navbar styling with proper z-index */
+      .h-16.top-0.absolute.z-10.flex {
+        background: linear-gradient(135deg, ${COLORS.grokPurple}, ${COLORS.grokDark}) !important;
+        border-bottom: 2px solid ${COLORS.grokNeon} !important;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.3) !important;
+        position: relative !important;
+        z-index: 10 !important;
+      }
+      
+      /* Button styling */
+      button, [type="button"] {
+        background-color: ${COLORS.primary} !important;
+        border: none !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        position: relative !important;
+        z-index: 5 !important;
+      }
+      
+      button:hover, [type="button"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 15px rgba(255, 79, 77, 0.4) !important;
+      }
+      
+      /* Headings */
+      h1, h2, h3, h4 {
+        color: ${COLORS.primary} !important;
+        font-weight: bold !important;
+        position: relative !important;
+        z-index: 5 !important;
+      }
+      
+      /* Three.js canvas styling - FIXED with negative z-index */
+      #grok-particle-canvas {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: -1 !important;
+        pointer-events: none !important;
+      }
+      
+      /* Fix for input forms to appear above particles */
+      .query-bar, form, textarea, input, .flex.flex-col-reverse {
+        position: relative !important;
+        z-index: 5 !important;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    log('Global styles injected');
+  }
+  
+// Function to style the Grok input form
+function stylePandaInputForm() {
+  log('Applying Panda-like styling to Grok input form');
+  
+  // Target the main query form container
+  const queryForm = document.querySelector('.flex.flex-col-reverse form');
+  if (queryForm instanceof HTMLElement) {
+    queryForm.style.maxWidth = '900px';
+    queryForm.style.margin = '0 auto';
+  }
+  
+  // Style the query bar with gradient and shadows
+  const queryBar = document.querySelector('.query-bar');
+  if (queryBar instanceof HTMLElement) {
+    // Apply cool gradient background
+    queryBar.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)';
+    queryBar.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.12)';
+    queryBar.style.borderRadius = '12px';
+    queryBar.style.border = '1px solid rgba(0, 0, 0, 0.08)';
+    queryBar.style.transition = 'all 0.3s ease';
+    
+    // Add hover effect to the entire query bar
+    queryBar.addEventListener('mouseenter', () => {
+      queryBar.style.boxShadow = '0 15px 30px rgba(0, 0, 0, 0.15)';
+      queryBar.style.transform = 'translateY(-2px)';
+    });
+    
+    queryBar.addEventListener('mouseleave', () => {
+      queryBar.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.12)';
+      queryBar.style.transform = 'translateY(0)';
+    });
+    
+    // Style the textarea for better input experience
+    const textarea = queryBar.querySelector('textarea');
+    if (textarea instanceof HTMLElement) {
+      textarea.style.backgroundColor = 'transparent';
+      textarea.style.fontSize = '16px';
+      textarea.style.padding = '15px';
+      textarea.style.borderRadius = '8px';
+      textarea.style.marginBottom = '10px';
+    }
+    
+    // Style the buttons container
+    const buttonsContainer = queryBar.querySelector('.flex.gap-1\\.5.absolute.inset-x-0.bottom-0');
+    if (buttonsContainer instanceof HTMLElement) {
+      buttonsContainer.style.padding = '12px 15px';
+      buttonsContainer.style.backgroundColor = 'rgba(248, 249, 250, 0.9)';
+      buttonsContainer.style.backdropFilter = 'blur(5px)';
+      buttonsContainer.style.borderTop = '1px solid rgba(0, 0, 0, 0.05)';
+    }
+    
+    // Style all buttons
+    const buttons = queryBar.querySelectorAll('button');
+    buttons.forEach(button => {
+      if (button instanceof HTMLElement) {
+        button.style.borderRadius = '6px';
+        button.style.padding = '10px 16px';
+        button.style.margin = '0 4px';
+        button.style.transition = 'all 0.2s ease';
+        
+        if (button.classList.contains('rounded-full')) {
+          button.style.width = 'auto';
+          button.style.height = 'auto';
+          button.style.aspectRatio = 'auto';
+        }
+      }
+    });
+    
+    // Special styles for specific buttons
+    const thinkButton = Array.from(buttons).find(btn => 
+      btn.textContent && btn.textContent.includes('Think')
+    );
+    if (thinkButton instanceof HTMLElement) {
+      thinkButton.style.backgroundColor = COLORS.primary;
+      thinkButton.style.color = 'white';
+      thinkButton.style.fontWeight = 'bold';
+      thinkButton.style.boxShadow = '0 4px 6px rgba(255, 79, 77, 0.25)';
+    }
+    
+    const submitButton = queryBar.querySelector('button[type="submit"]');
+    if (submitButton instanceof HTMLElement) {
+      submitButton.style.backgroundColor = COLORS.grokNeon;
+      submitButton.style.color = COLORS.grokDark;
+      submitButton.style.fontWeight = 'bold';
+      submitButton.style.borderRadius = '6px';
+      submitButton.style.boxShadow = '0 4px 6px rgba(0, 255, 204, 0.25)';
+    }
+  }
+  
+  // Style suggestion buttons
+  const suggestionButtons = document.querySelectorAll('div[role="button"]');
+  suggestionButtons.forEach((button, index) => {
+    if (button instanceof HTMLElement) {
+      button.style.borderRadius = '6px';
+      button.style.padding = '12px 18px';
+      button.style.margin = '5px';
+      button.style.transition = 'all 0.2s ease';
+      button.style.fontWeight = 'bold';
+      
+      if (index % 2 === 0) {
+        button.style.backgroundColor = COLORS.primary;
+        button.style.color = 'white';
+        button.style.border = 'none';
+        button.style.boxShadow = '0 4px 8px rgba(255, 79, 77, 0.2)';
+      } else {
+        button.style.backgroundColor = 'white';
+        button.style.color = COLORS.grokDark;
+        button.style.border = `1px solid ${COLORS.grokDark}`;
+        button.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.08)';
+      }
+      
+      button.addEventListener('mouseenter', () => {
+        button.style.transform = 'translateY(-3px)';
+        button.style.boxShadow = index % 2 === 0 ? 
+          '0 8px 15px rgba(255, 79, 77, 0.3)' : 
+          '0 8px 15px rgba(0, 0, 0, 0.12)';
+      });
+      
+      button.addEventListener('mouseleave', () => {
+        button.style.transform = 'translateY(0)';
+        button.style.boxShadow = index % 2 === 0 ? 
+          '0 4px 8px rgba(255, 79, 77, 0.2)' : 
+          '0 4px 8px rgba(0, 0, 0, 0.08)';
+      });
+    }
+  });
+  
+  log('Form styling applied');
+}
+
+// Create custom navbar
+function createCoolNavbar() {
+  const navbar = document.querySelector('.h-16.top-0.absolute.z-10.flex');
+  if (!navbar) return;
+  
+  // Add glow effect to navbar
+  const navGlow = document.createElement('div');
+  navGlow.className = 'grok-nav-glow';
+  navGlow.style.position = 'absolute';
+  navGlow.style.bottom = '-5px';
+  navGlow.style.left = '0';
+  navGlow.style.width = '100%';
+  navGlow.style.height = '5px';
+  navGlow.style.background = COLORS.grokNeon;
+  navGlow.style.filter = 'blur(3px)';
+  navGlow.style.pointerEvents = 'none';
+  
+  navbar.appendChild(navGlow);
+  log('Navbar enhanced');
+}
+
+// Create Three.js fluid particles system with atom effect when thinking
+class FluidParticlesSystem {
+  easeInOut = t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  renderer: THREE.WebGLRenderer;
+  clock: THREE.Clock;
+  particles: THREE.Points;
+  particleCount: number;
+  uniforms: any;
+  lastMousePosition: THREE.Vector2;
+  
+  // Atom effect properties
+  isThinking: boolean = false;
+  atomRotation: number = 0;
+  orbitGeometries: THREE.Mesh[] = [];
+  originalPositions: Float32Array | null = null;
+  thinkModeTransition: number = 0;
+  
+  constructor() {
+    this.particleCount = 5000;
+    this.clock = new THREE.Clock();
+    this.lastMousePosition = new THREE.Vector2(0, 0);
+    
+    this.setupThreeJS();
+    this.createParticles();
+    this.monitorThinkMode();
+    this.animate();
+    
+    log('Fluid particles system initialized');
+  }
+  
+  setupThreeJS() {
+    // Create scene
+    this.scene = new THREE.Scene();
+    
+    // Create camera
+    this.camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    this.camera.position.z = 50;
+    
+    // Create renderer
+    this.renderer = new THREE.WebGLRenderer({ 
+      alpha: true,
+      antialias: true 
+    });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    
+    // Add canvas to page with explicit styling for z-index
+    const canvas = this.renderer.domElement;
+    canvas.id = 'grok-particle-canvas';
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.zIndex = '-1'; // Negative z-index to keep it behind all content
+    canvas.style.pointerEvents = 'none';
+    
+    // Add the canvas as the first child of body to keep it behind other elements
+  if (document.body.firstChild) {
+    document.body.insertBefore(canvas, document.body.firstChild);
+  } else {
+    document.body.appendChild(canvas);
+  }
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+  
+  createParticles() {
+    // Create particle geometry
+    const particlesGeometry = new THREE.BufferGeometry();
+    
+    // Arrays for positions, velocities, and colors
+    const positions = new Float32Array(this.particleCount * 3);
+    const velocities = new Float32Array(this.particleCount * 3);
+    const colors = new Float32Array(this.particleCount * 3);
+    const sizes = new Float32Array(this.particleCount);
+    
+    // Primary and neon colors for particles
+    const primaryColor = new THREE.Color(COLORS.primary);
+    const neonColor = new THREE.Color(COLORS.grokNeon);
+    
+    // Initialize particles
+    for (let i = 0; i < this.particleCount; i++) {
+      const i3 = i * 3;
+      
+      // Random position within a sphere
+      const radius = 40 * Math.random();
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI;
+      
+      positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      positions[i3 + 2] = radius * Math.cos(phi);
+      
+      // Random initial velocity
+      velocities[i3] = (Math.random() - 0.5) * 0.2;
+      velocities[i3 + 1] = (Math.random() - 0.5) * 0.2;
+      velocities[i3 + 2] = (Math.random() - 0.5) * 0.2;
+      
+      // Colors - alternating between primary and neon
+      if (i % 2 === 0) {
+        colors[i3] = primaryColor.r;
+        colors[i3 + 1] = primaryColor.g;
+        colors[i3 + 2] = primaryColor.b;
+      } else {
+        colors[i3] = neonColor.r;
+        colors[i3 + 1] = neonColor.g;
+        colors[i3 + 2] = neonColor.b;
+      }
+      
+      // Random sizes
+      sizes[i] = Math.random() * 3 + 1;
+    }
+    
+    // Store original positions for returning from atom mode
+    this.originalPositions = positions.slice();
+    
+    // Add attributes to geometry
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    
+    // Create shader uniforms
+    this.uniforms = {
+      uTime: { value: 0 },
+      uMousePosition: { value: new THREE.Vector2(0, 0) },
+      uRepulsion: { value: 0.3 },
+      uViscosity: { value: 0.98 },
+      uCurlStrength: { value: 0.15 },
+      uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) }
+    };
+    
+    // Vertex shader - handles particle motion
+    const vertexShader = `
+      attribute vec3 velocity;
+      attribute vec3 color;
+      attribute float size;
+      
+      uniform float uTime;
+      uniform vec2 uMousePosition;
+      uniform float uRepulsion;
+      uniform float uPixelRatio;
+      
+      varying vec3 vColor;
+      
+      void main() {
+        vColor = color;
+        
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        float depth = 1.0 - (-mvPosition.z / 50.0);
+        
+        gl_PointSize = size * 4.0 * uPixelRatio * depth;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `;
+    
+    // Fragment shader - creates smooth, glowing particles
+    const fragmentShader = `
+      varying vec3 vColor;
+      
+      void main() {
+        // Circular shape with soft edges
+        float dist = length(gl_PointCoord - vec2(0.5));
+        float alpha = 1.0 - smoothstep(0.4, 0.5, dist);
+        float glow = 1.0 - smoothstep(0.2, 0.5, dist);
+        gl_FragColor = vec4(vColor * glow, alpha * glow);
+      }
+    `;
+    
+    // Create material
+    const particlesMaterial = new THREE.ShaderMaterial({
+      uniforms: this.uniforms,
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    
+    // Create points
+    this.particles = new THREE.Points(particlesGeometry, particlesMaterial);
+    this.scene.add(this.particles);
+  }
+  
+  // Monitor when Grok enters Think Mode
+ // Monitor when Grok enters Think Mode
+monitorThinkMode() {
+    const observer = new MutationObserver(() => {
+      // Find any button that contains "Think" or "Thinking" text
+      let thinkButton = null;
+      let isThinking = false;
+      
+      // Look for conventional indicators
+      const thinkingIndicator = document.querySelector('[data-thinking="true"], .thinking-indicator, .think-mode-active');
+      
+      // Check all buttons for "Thinking" text (replaces the invalid :contains selector)
+      document.querySelectorAll('button').forEach(btn => {
+        if (btn.textContent && (btn.textContent.includes('Thinking') || 
+            (btn.textContent.includes('Think') && btn.getAttribute('aria-busy') === 'true'))) {
+          thinkButton = btn;
+        }
+      });
+      
+      // Also look for other UI indicators of thinking state
+      const loadingSpinner = document.querySelector('.loading-spinner, .thinking-spinner, .grok-loading');
+      
+      // Determine if in thinking mode based on any of these indicators
+      isThinking = !!(thinkButton || thinkingIndicator || loadingSpinner);
+      
+      // Update atom effect state
+      if (isThinking && !this.isThinking) {
+        this.isThinking = true;
+        this.createOrbitalRings();
+        log('Grok entered Think Mode - activating atom effect');
+      } else if (!isThinking && this.isThinking) {
+        this.isThinking = false;
+        this.removeOrbitalRings();
+        log('Grok exited Think Mode - returning to fluid simulation');
+      }
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'data-thinking', 'aria-busy']
+    });
+  }
+  
+  
+  // Create orbital rings for atom effect
+  createOrbitalRings() {
+    // Remove any existing rings
+    this.removeOrbitalRings();
+    
+    const orbitalCount = 3;
+    
+    for (let i = 0; i < orbitalCount; i++) {
+      // Create orbital ring
+      const ringGeometry = new THREE.TorusGeometry(15 + i * 5, 0.1, 16, 100);
+      const ringMaterial = new THREE.MeshBasicMaterial({
+        color: i === 0 ? COLORS.primary : COLORS.grokNeon,
+        transparent: true,
+        opacity: 0.4,
+        side: THREE.DoubleSide
+      });
+      
+      const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+      
+      // Set random rotation
+      ring.rotation.x = Math.random() * Math.PI;
+      ring.rotation.y = Math.random() * Math.PI;
+      
+      this.scene.add(ring);
+      this.orbitGeometries.push(ring);
+    }
+  }
+  
+  // Remove orbital rings
+  removeOrbitalRings() {
+    this.orbitGeometries.forEach(ring => {
+      this.scene.remove(ring);
+    });
+    this.orbitGeometries = [];
+  }
+  
+  // Update particles for fluid or atom effect
+  updateParticles() {
+    const delta = this.clock.getDelta();
+    this.uniforms.uTime.value += delta;
+    
+    // Update transition value for smooth effect changes
+    if (this.isThinking) {
+      this.thinkModeTransition = Math.min(1, this.thinkModeTransition + delta * 1.5);
+    } else {
+      this.thinkModeTransition = Math.max(0, this.thinkModeTransition - delta * 1.5);
+    }
+    
+    // Get geometry attributes
+    const positions = this.particles.geometry.getAttribute('position');
+    const velocities = this.particles.geometry.getAttribute('velocity');
+    
+    // Update mouse position uniform
+    this.uniforms.uMousePosition.value.x = (mouseX / window.innerWidth) * 2 - 1;
+    this.uniforms.uMousePosition.value.y = -(mouseY / window.innerHeight) * 2 + 1;
+    
+    // Calculate mouse movement for dynamic effects
+    const mouseMovement = new THREE.Vector2(
+      this.uniforms.uMousePosition.value.x - this.lastMousePosition.x,
+      this.uniforms.uMousePosition.value.y - this.lastMousePosition.y
+    );
+    const mouseSpeed = mouseMovement.length();
+    
+    // Store current mouse position
+    this.lastMousePosition.copy(this.uniforms.uMousePosition.value);
+    
+    // Convert mouse from NDC to world space
+    const mouseWorld = new THREE.Vector3(
+      this.uniforms.uMousePosition.value.x * 40,
+      this.uniforms.uMousePosition.value.y * 40,
+      0
+    );
+    
+    // Update atom rotation
+    this.atomRotation += delta * 0.5;
+    
+    // Update particle positions
+    for (let i = 0; i < this.particleCount; i++) {
+      const i3 = i * 3;
+      
+      // Get current position and velocity
+      let posX = positions.array[i3];
+      let posY = positions.array[i3 + 1];
+      let posZ = positions.array[i3 + 2];
+      
+      let velX = velocities.array[i3];
+      let velY = velocities.array[i3 + 1];
+      let velZ = velocities.array[i3 + 2];
+      
+      if (this.thinkModeTransition > 0) {
+        // Atom Mode - calculate atomic positions
+        let atomX, atomY, atomZ;
+        
+        if (i < this.particleCount * 0.8) {
+            // Nucleus particles with better dispersion
+            const N = this.particleCount * 0.8;
+            const u = (i + 0.5) / N;
+            
+            // Use Fibonacci spiral distribution for more natural spacing
+            const phi = Math.PI * (3 - Math.sqrt(5)); // Golden angle
+            const y = 1 - (u * 2); // y goes from 1 to -1
+            const radius = Math.sqrt(1 - y * y); // Radius at y
+            
+            // Randomize the base radius more (35-65 range)
+            const baseRadius = 35 + (Math.sin(i * 0.1) * 15) + (i % 30 / 30) * 15;
+            
+            // Enhanced breathing effect with multiple frequencies
+            const breathingPrimary = Math.sin(this.atomRotation * 0.5) * 8;
+            const breathingSecondary = Math.sin(this.atomRotation * 0.3 + i * 0.01) * 4;
+            const totalBreathing = breathingPrimary + breathingSecondary;
+            
+            // Apply radius with breathing
+            const finalRadius = baseRadius + totalBreathing;
+            
+            // Add particle-specific wobble for organic feel
+            const particleWobble = Math.sin(i * 0.5 + this.atomRotation * 3) * 5;
+            
+            // Position using spherical coordinates with varied radii
+            const phiAngle = i * phi;
+            atomX = finalRadius * radius * Math.cos(phiAngle) + particleWobble;
+            atomY = finalRadius * radius * Math.sin(phiAngle) + particleWobble;
+            atomZ = finalRadius * y * (1 + Math.sin(this.atomRotation * 0.4 + i * 0.05) * 0.3);
+          } else {
+        // IMPROVED: More interesting electron orbits
+        const orbitIndex = i % 5; // More orbit variations (5 instead of 3)
+        const orbitRadius = 35 + orbitIndex * 8; // Larger orbits
+        const orbitSpeed = 1 + orbitIndex * 0.3;
+        const orbitPhase = (i / this.particleCount) * Math.PI * 2;
+        
+        // IMPROVED: Elliptical orbits instead of circular
+        const ellipticalFactor = 1.2 + (orbitIndex * 0.1);
+        
+        // IMPROVED: Orbit wobble for more natural movement
+        const orbitWobble = Math.sin(orbitPhase * 3 + this.atomRotation) * 4;
+        
+        atomX = orbitRadius * ellipticalFactor * Math.cos(orbitPhase + this.atomRotation * orbitSpeed) + orbitWobble;
+        atomY = orbitRadius * Math.sin(orbitPhase + this.atomRotation * orbitSpeed) + orbitWobble;
+        atomZ = Math.sin(orbitPhase * 5 + this.atomRotation) * (10 + orbitIndex * 2);
+        }          
+        // Inside updateParticles() where you handle transitions
+// Add this after calculating atomX, atomY, atomZ but before applying positions
+
+if (this.thinkModeTransition < 1 && this.isThinking) {
+  // ENTERING thinking mode - create sucking/vortex effect
+  const centerX = 0;
+  const centerY = 0;
+  const centerZ = 0;
+  
+  // Calculate direction toward center
+  const dirX = centerX - posX;
+  const dirY = centerY - posY;
+  const dirZ = centerZ - posZ;
+  
+  // Distance from center
+  const distFromCenter = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+  
+  // Normalize direction
+  const normX = dirX / distFromCenter;
+  const normY = dirY / distFromCenter;
+  const normZ = dirZ / distFromCenter;
+  
+  // Calculate inward force (stronger as transition progresses)
+  const suckingForce = this.thinkModeTransition * 2.0;
+  
+  // Add spiral effect (particles spiral toward center)
+  const spiralFactor = (1 - this.thinkModeTransition) * 0.5;
+  const spiralX = normY * spiralFactor;
+  const spiralY = -normX * spiralFactor;
+  
+  // Apply sucking force to velocity
+  velX += (normX + spiralX) * suckingForce;
+  velY += (normY + spiralY) * suckingForce;
+  velZ += normZ * suckingForce;
+  
+  // Position is still blended, but now with accelerating velocity
+  posX += velX * delta * 5;
+  posY += velY * delta * 5;
+  posZ += velZ * delta * 5;
+} else if (this.thinkModeTransition < 1 && !this.isThinking) {
+  // EXITING thinking mode - create explosion/dispersal effect
+  
+  // Direction outward from center (already at nucleus position)
+  const dirX = posX;
+  const dirY = posY;
+  const dirZ = posZ;
+  
+  // Distance from center
+  const distFromCenter = Math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ);
+  
+  // Normalized direction outward
+  let normX = 0, normY = 0, normZ = 0;
+  if (distFromCenter > 0.001) {
+    normX = dirX / distFromCenter;
+    normY = dirY / distFromCenter;
+    normZ = dirZ / distFromCenter;
+  } else {
+    // Random direction if at center
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    normX = Math.sin(phi) * Math.cos(theta);
+    normY = Math.sin(phi) * Math.sin(theta);
+    normZ = Math.cos(phi);
+  }
+  
+  // Calculate explosion force (stronger at beginning of exit transition)
+  const explosionForce = (1 - this.thinkModeTransition) * 4.0;
+  
+  // Add some randomness to make it look organic
+  const randomX = (Math.random() - 0.5) * 2;
+  const randomY = (Math.random() - 0.5) * 2;
+  const randomZ = (Math.random() - 0.5) * 2;
+  
+  // Apply explosion force to velocity
+  velX += (normX + randomX * 0.3) * explosionForce;
+  velY += (normY + randomY * 0.3) * explosionForce;
+  velZ += (normZ + randomZ * 0.3) * explosionForce;
+  
+  // Position is still blended, but with explosive velocity
+  posX += velX * delta * 5;
+  posY += velY * delta * 5;
+  posZ += velZ * delta * 5;
+}
+
+// Blend between fluid and atom positions based on transition value
+if (this.thinkModeTransition < 1) {
+ const fluidWeight = this.easeInOut(1 - this.thinkModeTransition);
+ const atomWeight = this.easeInOut(this.thinkModeTransition);   
+          
+          posX = posX * fluidWeight + atomX * atomWeight;
+          posY = posY * fluidWeight + atomY * atomWeight;
+          posZ = posZ * fluidWeight + atomZ * atomWeight;
+          
+          velX *= fluidWeight;
+          velY *= fluidWeight;
+          velZ *= fluidWeight;
+        } else {
+          posX = atomX;
+          posY = atomY;
+          posZ = atomZ;
+          
+          velX *= 0.9;
+          velY *= 0.9;
+          velZ *= 0.9;
+        }
+      } else {
+        // Fluid Mode - full fluid dynamics
+        
+        // Calculate distance from mouse
+        const dx = posX - mouseWorld.x;
+        const dy = posY - mouseWorld.y;
+        const dz = posZ - mouseWorld.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        // Apply repulsion force
+        const repulsionRadius = 15;
+        if (distance < repulsionRadius) {
+          const repulsionStrength = (1 - distance / repulsionRadius) * this.uniforms.uRepulsion.value;
+          const dirX = dx / distance;
+          const dirY = dy / distance;
+          const dirZ = dz / distance;
+          
+          velX += dirX * repulsionStrength * (1 + mouseSpeed * 10);
+          velY += dirY * repulsionStrength * (1 + mouseSpeed * 10);
+          velZ += dirZ * repulsionStrength * (1 + mouseSpeed * 10);
+        }
+        
+        // Apply curl noise for organic movement
+        const time = this.uniforms.uTime.value;
+        const noiseScale = 0.1;
+        const curlStrength = this.uniforms.uCurlStrength.value;
+        
+        const curlX = Math.sin(posY * noiseScale + time) * Math.cos(posZ * noiseScale);
+        const curlY = Math.sin(posZ * noiseScale + time) * Math.cos(posX * noiseScale);
+        const curlZ = Math.sin(posX * noiseScale + time) * Math.cos(posY * noiseScale);
+        
+        velX += curlX * curlStrength * delta;
+        velY += curlY * curlStrength * delta;
+        velZ += curlZ * curlStrength * delta;
+        
+        // Apply viscosity (fluid resistance)
+        velX *= this.uniforms.uViscosity.value;
+        velY *= this.uniforms.uViscosity.value;
+        velZ *= this.uniforms.uViscosity.value;
+        
+        // Update position
+        posX += velX;
+        posY += velY;
+        posZ += velZ;
+        
+        // Contain particles within boundaries with soft bouncing
+        const bound = 40;
+        if (Math.abs(posX) > bound) {
+          posX = Math.sign(posX) * bound;
+          velX *= -0.5; // Bounce with energy loss
+        }
+        if (Math.abs(posY) > bound) {
+          posY = Math.sign(posY) * bound;
+          velY *= -0.5;
+        }
+        if (Math.abs(posZ) > bound) {
+          posZ = Math.sign(posZ) * bound;
+          velZ *= -0.5;
+        }
+      }
+      
+      // Update positions and velocities
+      positions.array[i3] = posX;
+      positions.array[i3 + 1] = posY;
+      positions.array[i3 + 2] = posZ;
+      
+      velocities.array[i3] = velX;
+      velocities.array[i3 + 1] = velY;
+      velocities.array[i3 + 2] = velZ;
+    }
+    
+    // Update orbital rings if in thinking mode
+    if (this.orbitGeometries.length > 0) {
+      this.orbitGeometries.forEach((ring, index) => {
+        ring.rotation.x += delta * (0.2 + index * 0.1);
+        ring.rotation.y += delta * (0.3 - index * 0.05);
+        ring.rotation.z += delta * 0.1;
+        
+        const pulseFreq = 0.5 + index * 0.2;
+        const pulseAmp = 0.2;
+        if (ring.material instanceof THREE.MeshBasicMaterial) {
+          ring.material.opacity = 0.2 + pulseAmp + pulseAmp * Math.sin(this.uniforms.uTime.value * pulseFreq);
+        }
+      });
+    }
+    
+    // Mark attributes as needing update
+    positions.needsUpdate = true;
+    velocities.needsUpdate = true;
+  }
+  
+  animate() {
+    requestAnimationFrame(this.animate.bind(this));
+    
+    // Update particles
+    this.updateParticles();
+    
+    // Render scene
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// Main function to apply all styles
+function restyleGrok() {
+  log('Starting Grok restyling');
+  
+  if (document.querySelector('[data-grok-styled]')) {
+    log('Already styled, skipping');
+    return;
+  }
+  
+  try {
+    // Apply all styles
+    injectGlobalStyles();
+    createCoolNavbar();
+    stylePandaInputForm();
+    trackCursor();
+    
+    // Create Three.js fluid particles
+    new FluidParticlesSystem();
+    
+    // Mark as styled
+    const marker = document.createElement('div');
+    marker.setAttribute('data-grok-styled', 'true');
+    marker.style.display = 'none';
+    document.body.appendChild(marker);
+    
+    log('Styling complete!');
+  } catch (e) {
+    console.error('Styling failed:', e);
+  }
+}
+
+// Initialize when page is ready
+function init() {
+  log('Initializing Grok Restyler');
+  
+  // Apply styles when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', restyleGrok);
+  } else {
+    restyleGrok();
+  }
+  
+  // Set up observer to maintain styles
+  const observer = new MutationObserver(() => {
+    if (!document.querySelector('[data-grok-styled]')) {
+      restyleGrok();
+    }
+  });
+  
+  window.addEventListener('load', () => {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  });
+}
+
+// Start the restyler
+init();
